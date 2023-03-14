@@ -1,0 +1,55 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{r}
+library(readr)
+board <- read_delim("~/bgg_dataset.csv", 
+    delim = ";", escape_double = FALSE, trim_ws = TRUE)
+```
+
+```{r}
+board$major<-gsub("(.*),.*", "\\1", board$Domains)
+board$major<-gsub("(.*),.*", "\\1", board$major)
+library(tidyverse)
+```
+```{r}
+boxplot(board$`Rating Average`~board$major)
+```
+
+```{r}
+rating.aov<-lm(board$`Rating Average`~board$major)
+summary(rating.aov)
+TukeyHSD(rating.aov)
+library(sjPlot)
+library(sjlabelled)
+library(sjmisc)
+library(emmeans)
+plot_model(rating.aov)
+```
+
+```{r}
+library(MASS)
+board.complete<-na.omit(board)
+full.board<-lm(`Rating Average`~major+Mechanics+`Owned Users`+`Complexity Average`+`Min Age`+`Play Time`+`Max Players`+`Min Players`+`Year Published`, data=board.complete)
+stepAIC(full.board)
+```
+
+```{r}
+step.model<-lm(formula = `Rating Average` ~ major + `Owned Users` + `Complexity Average` + 
+    `Min Age` + `Play Time` + `Min Players` + `Year Published`, 
+    data = board.complete)
+summary(step.model)
+plot_model(step.model)
+```
+
+```{r}
+board.complete$`Year Published`<-as.Date(ISOdate(board.complete$`Year Published`, 1, 1))
+ggplot(board.complete, aes(x=`Year Published`, y=`Rating Average`)) + geom_smooth() + scale_x_date(date_labels = "%Y")
+```
+
+```{r}
+head(board.complete %>% filter(major == "Children's Games") %>% arrange(desc(`Rating Average`)) %>% dplyr::select(Name, `Year Published`, `Rating Average`, `Complexity Average`),10)
+```
+
